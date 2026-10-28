@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Quest - Asking & Giving Opinion</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    overflow-x: hidden;
+    padding: 20px 0;
+  }
+  .game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    max-width: 700px;
+  }
+  h1 {
+    font-size: 1.8em;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .info-bar {
+    display: flex;
+    gap: 20px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    font-size: 0.95em;
+  }
+  .info-bar span { font-weight: bold; color: #ffd700; }
+  .question-box {
+    background: rgba(255,255,255,0.1);
+    padding: 15px 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,215,0,0.3);
+  }
+  .question-box .q-label {
+    color: #ffd700;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+  }
+  .question-box .q-text {
+    font-size: 1.05em;
+    line-height: 1.5;
+  }
+  canvas {
+    border: 3px solid #ffd700;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(255,215,0,0.4);
+    background: #2a2a3e;
+  }
+  
+  .options-panel {
+    width: 100%;
+    max-width: 600px;
+    background: rgba(255,255,255,0.08);
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,215,0,0.3);
+    backdrop-filter: blur(10px);
+  }
+  .options-panel h3 {
+    text-align: center;
+    color: #ffd700;
+    margin-bottom: 12px;
+    font-size: 1em;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .option-card {
+    background: rgba(0,0,0,0.3);
+    border: 2px solid;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-card .opt-letter {
+    font-size: 1.5em;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .option-card .opt-text {
+    font-size: 0.88em;
+    line-height: 1.4;
+    flex: 1;
+  }
+  .option-card .opt-status {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 1.2em;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .option-card[data-letter="A"] { border-color: #4ecdc4; }
+  .option-card[data-letter="A"] .opt-letter { color: #4ecdc4; }
+  .option-card[data-letter="B"] { border-color: #ff6b6b; }
+  .option-card[data-letter="B"] .opt-letter { color: #ff6b6b; }
+  .option-card[data-letter="C"] { border-color: #ffd700; }
+  .option-card[data-letter="C"] .opt-letter { color: #ffd700; }
+  .option-card[data-letter="D"] { border-color: #a78bfa; }
+  .option-card[data-letter="D"] .opt-letter { color: #a78bfa; }
+  
+  .option-card.safe {
+    background: rgba(76, 175, 80, 0.3);
+    border-color: #4CAF50 !important;
+  }
+  .option-card.safe .opt-letter { color: #4CAF50 !important; }
+  .option-card.safe .opt-status { opacity: 1; color: #4CAF50; }
+  
+  .option-card.wrong {
+    background: rgba(100, 100, 100, 0.3);
+    border-color: #555 !important;
+    opacity: 0.5;
+  }
+  .option-card.wrong .opt-status { opacity: 1; color: #f44336; }
+  
+  .option-card.pulse {
+    animation: pulse 0.5s ease;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #aaa;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  .controls-info {
+    font-size: 0.85em;
+    color: #aaa;
+    text-align: center;
+  }
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    backdrop-filter: blur(5px);
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: linear-gradient(135deg, #16213e, #0f3460);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    border: 2px solid #ffd700;
+    max-width: 500px;
+    box-shadow: 0 0 50px rgba(255,215,0,0.3);
+  }
+  .modal h2 {
+    font-size: 2em;
+    margin-bottom: 15px;
+    color: #ffd700;
+  }
+  .modal p {
+    font-size: 1.05em;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .btn {
+    padding: 12px 35px;
+    font-size: 1.1em;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+  }
+  .btn:hover { transform: scale(1.05); }
+  .sound-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid #ffd700;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9em;
+    z-index: 50;
+  }
+</style>
+</head>
+<body>
+
+<button class="sound-toggle" id="soundToggle">🔊 Sound: ON</button>
+
+<div class="game-wrapper">
+  <h1>🏰 Maze Quest: Asking & Giving Opinion</h1>
+  
+  <div class="info-bar">
+    <div>Soal: <span id="qNum">1</span>/5</div>
+    <div>Skor: <span id="score">0</span></div>
+    <div>Nyawa: <span id="lives">❤️❤️❤️</span></div>
+  </div>
+
+  <div class="question-box">
+    <div class="q-label" id="qLabel">Question 1</div>
+    <div class="q-text" id="qText">Loading...</div>
+  </div>
+
+  <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+  <div class="options-panel">
+    <h3>📋 Pilih Jawaban - Gerakkan karaktermu ke area labirin yang sesuai!</h3>
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>Area A (Kiri Atas)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>Area B (Kanan Atas)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ffd700"></div>Area C (Kiri Bawah)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div>Area D (Kanan Bawah)</div>
+    </div>
+  </div>
+
+  <div class="controls-info">
+    🎮 Gunakan <b>Arrow Keys</b> atau <b>WASD</b> untuk bergerak. Hindari monster 👾!
+  </div>
+</div>
+
+<!-- Start Screen -->
+<div class="overlay" id="startScreen">
+  <div class="modal">
+    <h2>🏰 Maze Quest</h2>
+    <p><b>Expression of Asking & Giving Opinion</b></p>
+    <p style="font-size: 0.95em; text-align: left;">
+      🎯 Jawab 5 pertanyaan tentang ungkapan meminta & memberi pendapat.<br><br>
+      📋 Baca pilihan jawaban di panel bawah labirin.<br><br>
+      🧭 Gerakkan karaktermu ke area labirin (A/B/C/D) yang sesuai.<br><br>
+      👾 Hindari monster yang bergerak acak!<br><br>
+      ✅ Jawaban benar = area aman + kembang api 🎆<br>
+      ❌ Jawaban salah = efek bom 💥 (coba opsi lain)<br>
+      💀 Tertangkap monster = kehilangan nyawa
+    </p>
+    <button class="btn" onclick="startGame()">🚀 Mulai Petualangan</button>
+  </div>
+</div>
+
+<!-- Game Over Screen -->
+<div class="overlay hidden" id="gameOverScreen">
+  <div class="modal">
+    <h2 id="endTitle">💀 Game Over</h2>
+    <p id="endMessage">Kamu tertangkap monster!</p>
+    <button class="btn" onclick="location.reload()">🔄 Main Lagi</button>
+  </div>
+</div>
+
+<script>
+// ==================== DATA PERTANYAAN ====================
+const questions = [
+  {
+    question: "Which expression is used to ASK for someone's opinion?",
+    options: [
+      "What do you think about this book?",
+      "I think this book is interesting.",
+      "In my opinion, it's boring.",
+      "I personally believe it's great."
+    ],
+    correct: 0
+  },
+  {
+    question: "Choose the correct expression to GIVE your opinion:",
+    options: [
+      "What's your opinion on this?",
+      "Could you tell me what you think?",
+      "I personally think this is a good idea.",
+      "Do you have any thoughts about it?"
+    ],
+    correct: 2
+  },
+  {
+    question: "Complete the dialogue:\nA: \"What do you think about our new classmate?\"\nB: \"_____, she is very friendly and smart.\"",
+    options: [
+      "What do you think",
+      "In my opinion",
+      "Do you agree with me",
+      "Can you tell me your idea"
+    ],
+    correct: 1
+  },
+  {
+    question: "Which sentence shows ASKING for opinion in a POLITE way?",
+    options: [
+      "Tell me your opinion right now!",
+      "I really want your opinion!",
+      "Would you mind sharing your thoughts?",
+      "Give me your opinion immediately!"
+    ],
+    correct: 2
+  },
+  {
+    question: "Complete the conversation:\nA: \"Do you have any idea for our group project?\"\nB: \"_____ we could make a video presentation.\"",
+    options: [
+      "What do you think about",
+      "I suggest that",
+      "What's your opinion on",
+      "Do you agree with me that"
+    ],
+    correct: 1
+  }
+];
+
+// ==================== GAME STATE ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const CELL = 40;
+const COLS = 15;
+const ROWS = 15;
+
+// Maze layout: 0=jalan, 1=dinding, 2=start, 3=A, 4=B, 5=C, 6=D
+const mazeLayout = [
+  [3,1,1,1,0,0,0,0,0,0,0,1,1,1,4],
+  [1,0,0,1,0,1,1,1,1,1,0,1,0,0,1],
+  [1,0,0,0,0,0,0,0,0,1,0,1,0,1,1],
+  [1,0,1,1,1,1,0,1,0,1,0,0,0,0,1],
+  [0,0,0,0,0,1,0,1,0,0,0,1,1,0,0],
+  [1,1,1,1,0,1,0,1,1,1,0,1,0,0,1],
+  [0,0,0,0,0,0,0,2,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,0,1,1,1,0,1,1,1,1],
+  [1,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
+  [1,1,1,1,0,1,1,1,0,1,1,1,0,1,1],
+  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,0,1,1,1,1,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1],
+  [5,0,0,0,0,0,0,0,0,0,0,0,0,0,6]
+];
+
+const LETTERS = ['A', 'B', 'C', 'D'];
+const AREA_COLORS = ['#4ecdc4', '#ff6b6b', '#ffd700', '#a78bfa'];
+
+let state = {
+  currentQ: 0,
+  score: 0,
+  lives: 3,
+  player: { x: 7, y: 6 },
+  monsters: [],
+  wrongAnswers: new Set(),
+  safeAnswers: new Set(),
+  gameRunning: false,
+  effects: [],
+  keys: {},
+  questionLocked: false,
+  moveCooldown: 0
+};
+
+// ==================== AUDIO SYSTEM ====================
+let audioCtx = null;
+let soundEnabled = true;
+let bgMusicInterval = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playTone(freq, duration, type = 'sine', volume = 0.15, delay = 0) {
+  if (!soundEnabled || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, audioCtx.currentTime + delay);
+  gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + delay + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + delay);
+  osc.stop(audioCtx.currentTime + delay + duration);
+}
+
+function playSuccess() {
+  playTone(523.25, 0.15, 'triangle', 0.2, 0);
+  playTone(659.25, 0.15, 'triangle', 0.2, 0.1);
+  playTone(783.99, 0.3, 'triangle', 0.2, 0.2);
+  playTone(1046.5, 0.4, 'sine', 0.15, 0.3);
+}
+
+function playFail() {
+  playTone(200, 0.2, 'sawtooth', 0.15, 0);
+  playTone(150, 0.3, 'sawtooth', 0.15, 0.15);
+  playTone(100, 0.4, 'sawtooth', 0.12, 0.3);
+}
+
+function playHit() {
+  playTone(80, 0.3, 'square', 0.2, 0);
+  playTone(60, 0.3, 'square', 0.15, 0.1);
+}
+
+function playFirework() {
+  for (let i = 0; i < 8; i++) {
+    playTone(1000 + Math.random() * 2000, 0.1, 'sine', 0.08, i * 0.05);
+  }
+}
+
+function playStep() {
+  playTone(400 + Math.random() * 100, 0.05, 'sine', 0.05);
+}
+
+// Background music - instrumen melodi sederhana
+const bgMelody = [
+  { f: 261.63, d: 0.3 }, // C
+  { f: 329.63, d: 0.3 }, // E
+  { f: 392.00, d: 0.3 }, // G
+  { f: 329.63, d: 0.3 }, // E
+  { f: 349.23, d: 0.3 }, // F
+  { f: 293.66, d: 0.3 }, // D
+  { f: 261.63, d: 0.6 }, // C
+  { f: 0, d: 0.3 }        // rest
+];
+
+function startBgMusic() {
+  if (!soundEnabled) return;
+  stopBgMusic();
+  let noteIndex = 0;
+  bgMusicInterval = setInterval(() => {
+    if (!soundEnabled) return;
+    const note = bgMelody[noteIndex];
+    if (note.f > 0) {
+      playTone(note.f, note.d * 0.9, 'triangle', 0.04);
+      playTone(note.f / 2, note.d * 0.9, 'sine', 0.02);
+    }
+    noteIndex = (noteIndex + 1) % bgMelody.length;
+  }, 300);
+}
+
+function stopBgMusic() {
+  if (bgMusicInterval) {
+    clearInterval(bgMusicInterval);
+    bgMusicInterval = null;
+  }
+}
+
+document.getElementById('soundToggle').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundToggle').textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+  if (soundEnabled) startBgMusic();
+  else stopBgMusic();
+});
+
+// ==================== MONSTER AI ====================
+function spawnMonsters() {
+  state.monsters = [];
+  const monsterSpawns = [
+    { x: 3, y: 3 },
+    { x: 11, y: 3 },
+    { x: 3, y: 11 }
+  ];
+  monsterSpawns.forEach(pos => {
+    state.monsters.push({
+      x: pos.x, y: pos.y,
+      moveTimer: 0,
+      moveDelay: 30 + Math.random() * 20
+    });
+  });
+}
+
+function getValidNeighbors(x, y) {
+  const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  const valid = [];
+  for (const [dx, dy] of dirs) {
+    const nx = x + dx, ny = y + dy;
+    if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+      const cell = mazeLayout[ny][nx];
+      if (cell !== 1) valid.push({ x: nx, y: ny });
+    }
+  }
+  return valid;
+}
+
+function moveMonster(m) {
+  m.moveTimer++;
+  if (m.moveTimer < m.moveDelay) return;
+  m.moveTimer = 0;
+  m.moveDelay = 25 + Math.random() * 25;
+  
+  const neighbors = getValidNeighbors(m.x, m.y);
+  if (neighbors.length === 0) return;
+  
+  // 100% random movement sesuai permintaan
+  const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+  m.x = next.x;
+  m.y = next.y;
+}
+
+// ==================== PILIHAN JAWABAN (PANEL) ====================
+function renderOptionsPanel() {
+  const q = questions[state.currentQ];
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  
+  q.options.forEach((opt, idx) => {
+    const card = document.createElement('div');
+    card.className = 'option-card';
+    card.dataset.letter = LETTERS[idx];
+    card.dataset.index = idx;
+    card.innerHTML = `
+      <div class="opt-letter">${LETTERS[idx]}</div>
+      <div class="opt-text">${opt}</div>
+      <div class="opt-status"></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateOptionCard(idx, status) {
+  const cards = document.querySelectorAll('.option-card');
+  const card = cards[idx];
+  if (!card) return;
+  
+  card.classList.add('pulse');
+  setTimeout(() => card.classList.remove('pulse'), 500);
+  
+  if (status === 'safe') {
+    card.classList.add('safe');
+    card.querySelector('.opt-status').textContent = '✓';
+  } else if (status === 'wrong') {
+    card.classList.add('wrong');
+    card.querySelector('.opt-status').textContent = '✗';
+  }
+}
+
+// ==================== PLAYER MOVEMENT ====================
+function tryMovePlayer(dx, dy) {
+  if (state.questionLocked) return;
+  if (state.moveCooldown > 0) return;
+  
+  const nx = state.player.x + dx;
+  const ny = state.player.y + dy;
+  if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+  const cell = mazeLayout[ny][nx];
+  if (cell === 1) return;
+  
+  state.player.x = nx;
+  state.player.y = ny;
+  state.moveCooldown = 8; // cooldown agar tidak terlalu cepat
+  playStep();
+  
+  // Check answer area (3=A, 4=B, 5=C, 6=D)
+  if (cell >= 3 && cell <= 6) {
+    const optIdx = cell - 3;
+    if (!state.safeAnswers.has(optIdx) && !state.wrongAnswers.has(optIdx)) {
+      checkAnswer(optIdx, nx, ny);
+    }
+  }
+}
+
+function checkAnswer(optIdx, x, y) {
+  const q = questions[state.currentQ];
+  if (optIdx === q.correct) {
+    // CORRECT - area ditutup dari akses monster, aman
+    state.safeAnswers.add(optIdx);
+    state.score += 100;
+    state.questionLocked = true;
+    playSuccess();
+    setTimeout(playFirework, 300);
+    
+    state.effects.push({
+      type: 'firework',
+      x: x * CELL + CELL/2,
+      y: y * CELL + CELL/2,
+      life: 60,
+      maxLife: 60
+    });
+    state.effects.push({
+      type: 'check',
+      x: x * CELL + CELL/2,
+      y: y * CELL + CELL/2,
+      life: 90,
+      maxLife: 90
+    });
+    
+    updateOptionCard(optIdx, 'safe');
+    updateUI();
+    
+    setTimeout(() => {
+      state.currentQ++;
+      if (state.currentQ >= questions.length) {
+        endGame(true);
+      } else {
+        loadQuestion();
+      }
+    }, 2200);
+  } else {
+    // WRONG - efek bom dan tanda X
+    state.wrongAnswers.add(optIdx);
+    playFail();
+    state.effects.push({
+      type: 'bomb',
+      x: x * CELL + CELL/2,
+      y: y * CELL + CELL/2,
+      life: 60,
+      maxLife: 60
+    });
+    state.effects.push({
+      type: 'x',
+      x: x * CELL + CELL/2,
+      y: y * CELL + CELL/2,
+      life: 90,
+      maxLife: 90
+    });
+    updateOptionCard(optIdx, 'wrong');
+  }
+}
+
+// ==================== RENDERING ====================
+function drawMaze() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const cell = mazeLayout[y][x];
+      const px = x * CELL;
+      const py = y * CELL;
+      
+      if (cell === 1) {
+        const grad = ctx.createLinearGradient(px, py, px + CELL, py + CELL);
+        grad.addColorStop(0, '#4a4a6a');
+        grad.addColorStop(1, '#2a2a4a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px, py, CELL, CELL);
+        ctx.strokeStyle = '#1a1a2e';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, CELL, CELL);
+      } else {
+        ctx.fillStyle = '#3a3a5a';
+        ctx.fillRect(px, py, CELL, CELL);
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        if ((x + y) % 2 === 0) ctx.fillRect(px, py, CELL, CELL);
+      }
+    }
+  }
+}
+
+function drawAnswerAreas() {
+  const corners = [
+    { x: 0, y: 0, idx: 0 },
+    { x: 14, y: 0, idx: 1 },
+    { x: 0, y: 14, idx: 2 },
+    { x: 14, y: 14, idx: 3 }
+  ];
+  
+  corners.forEach((c) => {
+    const px = c.x * CELL;
+    const py = c.y * CELL;
+    const isSafe = state.safeAnswers.has(c.idx);
+    const isWrong = state.wrongAnswers.has(c.idx);
+    const color = AREA_COLORS[c.idx];
+    
+    let bgColor = color;
+    if (isSafe) bgColor = '#4CAF50';
+    else if (isWrong) bgColor = '#555';
+    
+    ctx.fillStyle = bgColor;
+    ctx.globalAlpha = isSafe ? 0.95 : (isWrong ? 0.4 : 0.7);
+    ctx.fillRect(px, py, CELL, CELL);
+    ctx.globalAlpha = 1;
+    
+    ctx.strokeStyle = isSafe ? '#fff' : color;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(px + 2, py + 2, CELL - 4, CELL - 4);
+    
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(LETTERS[c.idx], px + CELL/2, py + CELL/2);
+    
+    // Efek area aman (ditutup dari monster)
+    if (isSafe) {
+      ctx.strokeStyle = '#4CAF50';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+      ctx.strokeRect(px - 2, py - 2, CELL + 4, CELL + 4);
+      ctx.strokeRect(px - 5, py - 5, CELL + 10, CELL + 10);
+      ctx.globalAlpha = 1;
+    }
+  });
+}
+
+function drawPlayer() {
+  const px = state.player.x * CELL + CELL/2;
+  const py = state.player.y * CELL + CELL/2;
+  
+  const grad = ctx.createRadialGradient(px, py, 0, px, py, CELL);
+  grad.addColorStop(0, 'rgba(78, 205, 196, 0.4)');
+  grad.addColorStop(1, 'rgba(78, 205, 196, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(px - CELL, py - CELL, CELL * 2, CELL * 2);
+  
+  ctx.font = '28px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🧙', px, py);
+}
+
+function drawMonsters() {
+  state.monsters.forEach(m => {
+    const px = m.x * CELL + CELL/2;
+    const py = m.y * CELL + CELL/2;
+    
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, CELL * 1.5);
+    grad.addColorStop(0, 'rgba(255, 0, 0, 0.3)');
+    grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px - CELL * 1.5, py - CELL * 1.5, CELL * 3, CELL * 3);
+    
+    const bob = Math.sin(Date.now() / 200 + m.x) * 2;
+    ctx.font = '28px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('👾', px, py + bob);
+  });
+}
+
+function drawEffects() {
+  state.effects = state.effects.filter(e => e.life > 0);
+  
+  state.effects.forEach(e => {
+    const progress = 1 - e.life / e.maxLife;
+    
+    if (e.type === 'firework') {
+      const numParticles = 20;
+      for (let i = 0; i < numParticles; i++) {
+        const angle = (i / numParticles) * Math.PI * 2;
+        const dist = progress * 80;
+        const px = e.x + Math.cos(angle) * dist;
+        const py = e.y + Math.sin(angle) * dist;
+        const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#a78bfa', '#fff'];
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.globalAlpha = 1 - progress;
+        ctx.beginPath();
+        ctx.arc(px, py, 4 * (1 - progress), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else if (e.type === 'check') {
+      ctx.fillStyle = '#4CAF50';
+      ctx.font = `bold ${40 + progress * 20}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 1 - progress;
+      ctx.fillText('✓', e.x, e.y - progress * 30);
+      ctx.globalAlpha = 1;
+    } else if (e.type === 'bomb') {
+      const radius = progress * 50;
+      const grad = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, radius);
+      grad.addColorStop(0, 'rgba(255, 200, 0, ' + (1 - progress) + ')');
+      grad.addColorStop(0.5, 'rgba(255, 100, 0, ' + (1 - progress) * 0.7 + ')');
+      grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (e.type === 'x') {
+      ctx.fillStyle = '#ff0000';
+      ctx.font = `bold ${40 + progress * 20}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 1 - progress;
+      ctx.fillText('✗', e.x, e.y - progress * 30);
+      ctx.globalAlpha = 1;
+    }
+    
+    e.life--;
+  });
+}
+
+function drawStartArea() {
+  const px = 7 * CELL;
+  const py = 6 * CELL;
+  ctx.fillStyle = 'rgba(78, 205, 196, 0.3)';
+  ctx.fillRect(px, py, CELL, CELL);
+  ctx.font = '12px Arial';
+  ctx.fillStyle = '#4ecdc4';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('START', px + CELL/2, py + CELL/2);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawMaze();
+  drawStartArea();
+  drawAnswerAreas();
+  drawMonsters();
+  drawPlayer();
+  drawEffects();
+}
+
+// ==================== GAME LOOP ====================
+function gameLoop() {
+  if (!state.gameRunning) return;
+  
+  if (state.moveCooldown > 0) state.moveCooldown--;
+  
+  if (state.keys['ArrowUp'] || state.keys['w'] || state.keys['W']) tryMovePlayer(0, -1);
+  else if (state.keys['ArrowDown'] || state.keys['s'] || state.keys['S']) tryMovePlayer(0, 1);
+  else if (state.keys['ArrowLeft'] || state.keys['a'] || state.keys['A']) tryMovePlayer(-1, 0);
+  else if (state.keys['ArrowRight'] || state.keys['d'] || state.keys['D']) tryMovePlayer(1, 0);
+  
+  state.monsters.forEach(m => moveMonster(m));
+  
+  // Cek tabrakan dengan monster
+  state.monsters.forEach(m => {
+    if (m.x === state.player.x && m.y === state.player.y) {
+      playerHit();
+    }
+  });
+  
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+function playerHit() {
+  state.lives--;
+  playHit();
+  state.effects.push({
+    type: 'bomb',
+    x: state.player.x * CELL + CELL/2,
+    y: state.player.y * CELL + CELL/2,
+    life: 40,
+    maxLife: 40
+  });
+  
+  // Reset posisi player ke start
+  state.player.x = 7;
+  state.player.y = 6;
+  
+  updateUI();
+  
+  if (state.lives <= 0) {
+    setTimeout(() => endGame(false), 500);
+  }
+}
+
+// ==================== UI ====================
+function loadQuestion() {
+  const q = questions[state.currentQ];
+  document.getElementById('qLabel').textContent = `Question ${state.currentQ + 1} of ${questions.length}`;
+  document.getElementById('qText').innerHTML = q.question.replace(/\n/g, '<br>');
+  document.getElementById('qNum').textContent = state.currentQ + 1;
+  
+  state.wrongAnswers.clear();
+  state.safeAnswers.clear();
+  state.questionLocked = false;
+  
+  state.player.x = 7;
+  state.player.y = 6;
+  
+  spawnMonsters();
+  renderOptionsPanel();
+}
+
+function updateUI() {
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('lives').textContent = '❤️'.repeat(state.lives) + '🖤'.repeat(3 - state.lives);
+}
+
+function endGame(victory) {
+  state.gameRunning = false;
+  stopBgMusic();
+  const screen = document.getElementById('gameOverScreen');
+  screen.classList.remove('hidden');
+  
+  if (victory) {
+    document.getElementById('endTitle').textContent = '🏆 VICTORY! 🏆';
+    document.getElementById('endMessage').innerHTML = 
+      `Selamat! Kamu menguasai materi <b>Asking & Giving Opinion</b>!<br><br>` +
+      `Skor Akhir: <b>${state.score}</b><br>` +
+      `Nyawa Tersisa: <b>${'❤️'.repeat(state.lives)}</b>`;
+    playSuccess();
+    setTimeout(playFirework, 500);
+  } else {
+    document.getElementById('endTitle').textContent = '💀 Game Over 💀';
+    document.getElementById('endMessage').innerHTML = 
+      `Kamu tertangkap monster!<br><br>` +
+      `Skor Akhir: <b>${state.score}</b><br>` +
+      `Coba lagi untuk menguasai materi!`;
+  }
+}
+
+// ==================== INPUT ====================
+document.addEventListener('keydown', (e) => {
+  state.keys[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  state.keys[e.key] = false;
+});
+
+// ==================== START GAME ====================
+function startGame() {
+  initAudio();
+  document.getElementById('startScreen').classList.add('hidden');
+  state.gameRunning = true;
+  loadQuestion();
+  updateUI();
+  startBgMusic();
+  gameLoop();
+}
+
+// Render awal
+render();
+</script>
+
+</body>
+</html>
