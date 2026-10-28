@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maze Quest: Asking & Giving Opinion</title>
+<style>
+:root{--bg:#10172b;--panel:#192441;--ink:#f3f6ff;--muted:#aab7d6;--cyan:#65e6d1;--pink:#ff719b;--gold:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0%,#293b69 0,#10172b 48%,#090e1c 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{padding:20px clamp(14px,4vw,44px) 10px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:900;letter-spacing:.04em;font-size:clamp(20px,3vw,30px)}.brand span{color:var(--cyan)}.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;border:1px solid #52658d;background:#263557;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}button:hover{filter:brightness(1.15)}button:focus-visible{outline:3px solid var(--gold)}
+main{max-width:1250px;margin:auto;padding:12px clamp(12px,3vw,32px) 28px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,.9fr);gap:18px}
+.panel{background:linear-gradient(145deg,rgba(30,44,77,.96),rgba(18,27,49,.96));border:1px solid #33476e;border-radius:22px;box-shadow:0 18px 50px #0004;overflow:hidden}
+.game-head{padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #33476e}.pill{font-size:12px;color:var(--cyan);border:1px solid #3c827e;padding:5px 9px;border-radius:99px;font-weight:800;letter-spacing:.08em}
+#maze{width:100%;display:block;background:#111b31;touch-action:none}.controls{padding:12px 18px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.side{padding:20px}.eyebrow{color:var(--cyan);font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase}.question{font-size:clamp(20px,2.4vw,28px);line-height:1.25;margin:9px 0 18px}.hint{color:var(--muted);font-size:14px;line-height:1.5}.options{display:grid;gap:9px;margin:17px 0}.option{display:flex;gap:10px;align-items:center;text-align:left;padding:12px;background:#202f50;border:1px solid #3d527d;border-radius:13px;font-weight:600;line-height:1.35}.letter{flex:none;display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:#34486f;color:var(--cyan);font-weight:900}.option.active{border-color:var(--gold);box-shadow:0 0 0 2px #ffd16633}.option.correct{border-color:var(--cyan);background:#164d4a}.option.wrong{border-color:var(--pink);background:#55243d}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.stat{padding:12px 8px;background:#111a2e;border-radius:12px;text-align:center}.stat strong{display:block;font-size:23px}.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.message{min-height:66px;padding:12px 14px;border-radius:13px;background:#111a2e;color:var(--muted);font-size:14px;line-height:1.45}.message.good{color:#9ff8e7;background:#103d3b}.message.bad{color:#ffb1c5;background:#481f36}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:14px}.legend span{display:flex;gap:6px;align-items:center}.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.overlay{position:fixed;inset:0;background:#080d1bdb;display:grid;place-items:center;padding:18px;z-index:5}.modal{max-width:520px;width:100%;padding:28px;background:#1a2745;border:1px solid #4b608a;border-radius:24px;text-align:center;box-shadow:0 24px 80px #0008}.modal h1{font-size:clamp(28px,5vw,42px);margin:8px 0}.modal p{color:var(--muted);line-height:1.6}.big-icon{font-size:54px}.primary{background:var(--cyan);color:#10202e;border:0;padding:13px 20px}.hidden{display:none!important}
+@media(max-width:850px){main{grid-template-columns:1fr}.side{padding:17px}.game-head{padding:14px 16px}}
+</style>
+</head>
+<body>
+<header><div class="brand">🧭 MAZE <span>QUEST</span></div><div class="top-actions"><button id="musicBtn" aria-pressed="false">♫ Musik: Mati</button><button id="restartBtn">↻ Mulai ulang</button></div></header>
+<main>
+<section class="panel">
+ <div class="game-head"><div><strong>Opinion Labyrinth</strong><div class="hint">Temukan ruang jawaban yang tepat!</div></div><span class="pill" id="levelTag">LEVEL 01</span></div>
+ <canvas id="maze" width="720" height="600" aria-label="Labirin permainan. Gerakkan pemain dengan tombol panah atau WASD."></canvas>
+ <div class="controls"><span>⌨️ Gerak: <b>W A S D</b> / tombol panah</span><span>🎯 Dekati pintu A, B, C, atau D</span></div>
+</section>
+<aside class="panel side">
+ <div class="eyebrow" id="progress">Pertanyaan 1 dari 8</div>
+ <div class="question" id="question">Loading...</div>
+ <div class="hint">Pilih jawaban dengan berjalan ke ruang berlabel A–D. Hindari monster! Jika jawaban salah, kamu masih bisa mencoba ruang lain.</div>
+ <div class="options" id="options"></div>
+ <div class="stats"><div class="stat"><strong id="score">0</strong><span>Skor</span></div><div class="stat"><strong id="lives">♥ ♥ ♥</strong><span>Nyawa</span></div><div class="stat"><strong id="escaped">0</strong><span>Benar</span></div></div>
+ <div class="message" id="message" role="status" aria-live="polite">Siap? Bergeraklah menuju salah satu ruang jawaban.</div>
+ <div class="legend"><span><i class="dot" style="background:#65e6d1"></i> Ruang aman (jawaban benar)</span><span><i class="dot" style="background:#ff719b"></i> Efek jawaban salah</span></div>
+</aside>
+</main>
+<div class="overlay" id="intro"><div class="modal"><div class="big-icon">🗝️👾</div><div class="eyebrow">English Learning Adventure</div><h1>Maze Quest</h1><p>Uji pemahamanmu tentang <b>Expression of Asking and Giving Opinion</b>. Bergeraklah ke salah satu dari empat ruang jawaban sebelum monster menangkapmu. Jawaban benar mengunci ruang menjadi zona aman!</p><p>Gunakan tombol panah/WASD atau tombol arah di layar. Musik instrumental bisa dinyalakan kapan saja.</p><button class="primary" id="startBtn">Mulai Quest →</button></div></div>
+<div class="overlay hidden" id="end"><div class="modal"><div class="big-icon" id="endIcon">🏆</div><h1 id="endTitle">Quest selesai!</h1><p id="endText"></p><button class="primary" id="playAgain">Main lagi ↻</button></div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('maze'),ctx=canvas.getContext('2d');
+const questions=[
+ {q:'Which expression is used to ask for someone’s opinion?',a:['I completely agree.','What do you think about it?','In my opinion, it is great.','I see your point.'],c:1,why:'“What do you think about it?” is used to ask for an opinion.'},
+ {q:'Your friend asks, “What do you think of our school library?” Choose a giving-opinion expression.',a:['Could you tell me your opinion?','Do you agree with me?','I think it is comfortable and quiet.','What is your view?'],c:2,why:'“I think…” introduces your own opinion.'},
+ {q:'Which sentence politely asks for an opinion?',a:['How do you feel about this plan?','That is a brilliant idea.','I disagree with you.','I believe this is useful.'],c:0,why:'“How do you feel about…?” asks what another person thinks.'},
+ {q:'Complete the dialogue: “_____ the new school rules?”',a:['I strongly believe','I totally agree','In my view','What is your opinion of'],c:3,why:'“What is your opinion of…?” is a question asking for someone’s view.'},
+ {q:'Which one expresses an opinion?',a:['Could I ask your view?','Personally, I think we should recycle.','What do you think?','Would you mind sharing your thoughts?'],c:1,why:'“Personally, I think…” is a giving-opinion expression.'},
+ {q:'Your classmate says, “I think group study is helpful.” You agree. What can you say?',a:['I don’t think so.','What is your opinion?','I agree with you.','Could you explain your view?'],c:2,why:'“I agree with you” expresses agreement with an opinion.'},
+ {q:'Which phrase is best to disagree politely?',a:['You are totally wrong!','I see your point, but I have a different opinion.','That is stupid.','I do not care.'],c:1,why:'This phrase acknowledges the other person and disagrees politely.'},
+ {q:'Choose the best question to invite a friend’s opinion about a movie.',a:['The movie was exciting.','I think the movie was good.','I loved the ending.','What did you think of the movie?'],c:3,why:'“What did you think of…?” invites someone to share their opinion.'}
+];
+const W=720,H=600,cell=40,cols=18,rows=15;
+let player,monster,blocked,questionIndex,score,lives,answered,wrongThis,gameOn,particles,shake,raf;
+const rooms=[
+ {x:1,y:1,w:5,h:4,cx:3,cy:3},{x:12,y:1,w:5,h:4,cx:14,cy:3},
+ {x:1,y:10,w:5,h:4,cx:3,cy:12},{x:12,y:10,w:5,h:4,cx:14,cy:12}
+];
+const centers=rooms.map(r=>({x:r.cx*cell+cell/2,y:r.cy*cell+cell/2}));
+function reset(){questionIndex=0;score=0;lives=3;answered=new Set();wrongThis=new Set();blocked=new Set();particles=[];shake=0;gameOn=true;player={x:360,y:300,r:12,speed:4};monster={x:360,y:110,r:15,dx:1.3,dy:1.1,tick:0};renderQuestion();updateStats();document.getElementById('end').classList.add('hidden');draw()}
+function renderQuestion(){let q=questions[questionIndex];document.getElementById('progress').textContent=`Pertanyaan ${questionIndex+1} dari ${questions.length}`;document.getElementById('levelTag').textContent=`LEVEL ${String(questionIndex+1).padStart(2,'0')}`;document.getElementById('question').textContent=q.q;document.getElementById('options').innerHTML='';q.a.forEach((a,i)=>{let b=document.createElement('button');b.className='option'+(wrongThis.has(i)?' wrong':'')+(blocked.has(i)?' correct':'');b.innerHTML=`<span class="letter">${'ABCD'[i]}</span><span>${a}</span>`;b.onclick=()=>{if(gameOn)moveToRoom(i)};document.getElementById('options').appendChild(b)});document.getElementById('message').className='message';document.getElementById('message').textContent='Pilih ruang A, B, C, atau D. Jangan sampai tertangkap!'}
+function updateStats(){document.getElementById('score').textContent=score;document.getElementById('lives').textContent='♥ '.repeat(lives).trim()||'—';document.getElementById('escaped').textContent=score}
+function roomAt(x,y){return rooms.findIndex(r=>x>=r.x*cell&&x<(r.x+r.w)*cell&&y>=r.y*cell&&y<(r.y+r.h)*cell)}
+function moveToRoom(i){if(blocked.has(i)||wrongThis.has(i))return;let c=centers[i];player.x=c.x;player.y=c.y;let q=questions[questionIndex];if(i===q.c){blocked.add(i);score+=100;burst(c.x,c.y,'good');tone(660,.12,'sine');setTimeout(()=>tone(880,.18,'sine'),100);document.getElementById('message').className='message good';document.getElementById('message').textContent='✓ Benar! '+q.why+' Ruang ini sekarang terkunci dan aman dari monster!';updateStats();renderQuestion();document.querySelectorAll('.option')[i]?.classList.add('correct');if(questionIndex===questions.length-1){setTimeout(finish,1000)}else{questionIndex++;setTimeout(()=>{wrongThis=new Set();blocked=new Set();player={x:360,y:300,r:12,speed:4};monster={x:360,y:110,r:15,dx:(Math.random()-.5)*3,dy:1.3,tick:0};renderQuestion();draw()},1700)}}else{wrongThis.add(i);burst(c.x,c.y,'bad');tone(140,.25,'sawtooth');shake=12;document.getElementById('message').className='message bad';document.getElementById('message').textContent='✕ Belum tepat! '+q.why+' Coba ruang lain yang belum kamu pilih.';renderQuestion();document.querySelectorAll('.option')[i]?.classList.add('wrong')}}
+function burst(x,y,type){for(let i=0;i<45;i++){let a=Math.random()*Math.PI*2,s=type==='good'?1+Math.random()*5:1+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:40+Math.random()*20,type,size:2+Math.random()*4})}if(type==='bad')for(let i=0;i<14;i++)particles.push({x:x+(Math.random()-.5)*35,y:y+(Math.random()-.5)*35,vx:(Math.random()-.5)*4,vy:-Math.random()*5,life:25,type:'smoke',size:4+Math.random()*7})}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#111b31';ctx.fillRect(0,0,W,H);
+ // maze grid and corridors
+ ctx.strokeStyle='#263758';ctx.lineWidth=2;for(let x=0;x<=W;x+=cell){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<=H;y+=cell){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+ // walls form room boundaries and central maze corridors
+ ctx.fillStyle='#30466c';for(let x=0;x<W;x+=cell){ctx.fillRect(x,0,cell,8);ctx.fillRect(x,H-8,cell,8)}for(let y=0;y<H;y+=cell){ctx.fillRect(0,y,8,cell);ctx.fillRect(W-8,y,8,cell)}
+ // room panels
+ rooms.forEach((r,i)=>{ctx.fillStyle=blocked.has(i)?'#164a48':wrongThis.has(i)?'#3e2039':'#1a2b49';ctx.fillRect(r.x*cell+3,r.y*cell+3,r.w*cell-6,r.h*cell-6);ctx.strokeStyle=blocked.has(i)?'#65e6d1':wrongThis.has(i)?'#ff719b':'#526b96';ctx.lineWidth=3;ctx.strokeRect(r.x*cell+5,r.y*cell+5,r.w*cell-10,r.h*cell-10);ctx.fillStyle='#eaf1ff';ctx.font='bold 25px system-ui';ctx.textAlign='center';ctx.fillText('ABCD'[i],r.cx*cell+cell/2,r.cy*cell+cell/2+8);if(blocked.has(i)){ctx.font='bold 20px system-ui';ctx.fillStyle='#65e6d1';ctx.fillText('✓',r.cx*cell+cell/2,r.cy*cell+cell/2+30)}});
+ // corridors
+ ctx.fillStyle='#182641';ctx.fillRect(240,240,240,120);ctx.fillRect(280,160,160,80);ctx.fillRect(280,360,160,80);ctx.fillRect(200,280,80,40);ctx.fillRect(440,280,80,40);
+ ctx.fillStyle='#61799f';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText('START',360,294);
+ // particles
+ particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=p.type==='good'?.08:.16;p.vx*=.98;p.life--;ctx.globalAlpha=Math.max(0,p.life/50);ctx.fillStyle=p.type==='good'?['#65e6d1','#ffd166','#fff','#ff719b'][Math.floor(p.life/4)%4]:p.type==='smoke'?'#9da8c4':'#ff719b';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});
+ // monster
+ if(gameOn){monster.tick++;if(monster.tick%24===0){monster.dx=(Math.random()-.5)*3.4;monster.dy=(Math.random()-.5)*3.4}monster.x+=monster.dx;monster.y+=monster.dy;if(monster.x<25||monster.x>W-25)monster.dx*=-1;if(monster.y<25||monster.y>H-25)monster.dy*=-1;monster.x=Math.max(25,Math.min(W-25,monster.x));monster.y=Math.max(25,Math.min(H-25,monster.y));
+ ctx.font='30px system-ui';ctx.textAlign='center';ctx.fillText('👾',monster.x,monster.y+10);
+ ctx.fillStyle='#65e6d1';ctx.beginPath();ctx.arc(player.x,player.y,player.r+5,0,Math.PI*2);ctx.fill();ctx.font='24px system-ui';ctx.fillText('🧑‍🚀',player.x,player.y+8);
+ if(Math.hypot(player.x-monster.x,player.y-monster.y)<player.r+monster.r+2){lives--;updateStats();burst(player.x,player.y,'bad');tone(100,.35,'sawtooth');player={x:360,y:300,r:12,speed:4};monster={x:Math.random()*600+60,y:Math.random()*450+50,r:15,dx:2,dy:1,tick:0};document.getElementById('message').className='message bad';document.getElementById('message').textContent='👾 Monster menangkapmu! Kamu kehilangan satu nyawa. Tetap bergerak!';if(lives<=0){gameOn=false;setTimeout(finish,500)}}}
+ if(shake>0)shake--;if(gameOn||particles.length)raf=requestAnimationFrame(draw)}
+function finish(){gameOn=false;document.getElementById('end').classList.remove('hidden');let win=questionIndex>=questions.length-1&&score>=questions.length*100;document.getElementById('endIcon').textContent=win?'🏆':'🧭';document.getElementById('endTitle').textContent=win?'Quest Complete!':'Quest Over';document.getElementById('endText').textContent=`Skor akhir: ${score}. Kamu menjawab benar ${score/100} dari ${questions.length} pertanyaan. ${win?'Hebat! Kamu menguasai expressions of asking and giving opinion!':'Coba lagi untuk mengalahkan monster dan menuntaskan semua soal.'}`}
+function move(dx,dy){if(!gameOn)return;let nx=Math.max(15,Math.min(W-15,player.x+dx)),ny=Math.max(15,Math.min(H-15,player.y+dy));let r=roomAt(nx,ny);if(r>=0&&blocked.has(r))return;player.x=nx;player.y=ny;let ri=roomAt(player.x,player.y);if(ri>=0&&!wrongThis.has(ri)&&!blocked.has(ri)){let rr=rooms[ri];if(player.x>rr.x*cell+20&&player.x<(rr.x+rr.w)*cell-20&&player.y>rr.y*cell+20&&player.y<(rr.y+rr.h)*cell-20)moveToRoom(ri)}}
+const keys={};window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='arrowup'||k==='w')move(0,-16);if(k==='arrowdown'||k==='s')move(0,16);if(k==='arrowleft'||k==='a')move(-16,0);if(k==='arrowright'||k==='d')move(16,0)});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let audioCtx=null,musicTimer=null,musicOn=false,note=0;function tone(freq,dur,wave='sine',vol=.07){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=wave;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur)}catch(e){}}
+function music(){if(!musicOn)return;const melody=[392,494,587,494,440,523,659,523,349,440,523,440,392,494,587,659];tone(melody[note%melody.length],.32,'sine',.025);if(note%4===0)tone([196,147,175,131][Math.floor(note/4)%4],.65,'triangle',.018);note++;musicTimer=setTimeout(music,360)}
+document.getElementById('musicBtn').onclick=()=>{musicOn=!musicOn;document.getElementById('musicBtn').textContent=musicOn?'♫ Musik: Nyala':'♫ Musik: Mati';document.getElementById('musicBtn').setAttribute('aria-pressed',musicOn);if(musicOn){audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();music()}else clearTimeout(musicTimer)};
+document.getElementById('startBtn').onclick=()=>{document.getElementById('intro').classList.add('hidden');reset()};document.getElementById('restartBtn').onclick=()=>{reset();document.getElementById('intro').classList.add('hidden')};document.getElementById('playAgain').onclick=()=>{reset()};reset();
+})();
+</script>
+</body></html>
